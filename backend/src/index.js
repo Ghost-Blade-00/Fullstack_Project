@@ -17,10 +17,10 @@ import deviceRoutes from "./routes/device.route.js";
 import envelopeRoutes from "./routes/envelope.route.js";
 import attachmentRoutes from "./routes/attachment.route.js";
 
-// ✅ Connect MongoDB
+//  Connect MongoDB
 connectDB();
 
-// ✅ Middlewares
+//  Middlewares
 app.disable("x-powered-by");
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
@@ -34,21 +34,21 @@ app.use((req, _res, next) => {
 
 app.use(morgan(":method :url :status :res[content-length] - :response-time ms id=:req[id]"));
 
-// ✅ Rate Limiters
+//  Rate Limiters
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 600 });
 
-// ✅ Routes
+//  Routes
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/messages", apiLimiter, messageRoutes);
 app.use("/api/devices", apiLimiter, deviceRoutes);
 app.use("/api/envelopes", apiLimiter, envelopeRoutes);
 app.use("/api/attachments", apiLimiter, attachmentRoutes);
 
-// ✅ Health check
+// Health check
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
-// ✅ Global error handler
+//  Global error handler
 app.use((err, req, res, next) => {
   console.error("❌ Server error:", err.stack);
   res.status(500).json({ message: "Internal server error" });
