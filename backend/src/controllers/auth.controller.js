@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
-import cloudinary from "../lib/cloudinary.js"; // ✅ Added import
+import cloudinary from "../lib/cloudinary.js"; //  Added import
 
 //  Generate JWT token & store in cookies
 const generateToken = (userId, res) => {
@@ -120,7 +120,7 @@ export const updateProfile = async (req, res) => {
       folder: "securechat_profiles",
     });
 
-    console.log("✅ Cloudinary upload successful:", result.secure_url);
+    console.log(" Cloudinary upload successful:", result.secure_url);
 
     profilePicUrl = result.secure_url;
 
@@ -133,11 +133,11 @@ export const updateProfile = async (req, res) => {
       { new: true }
     ).select("-password");
 
-    console.log("✅ Updated user:", updatedUser);
+    console.log(" Updated user:", updatedUser);
 
     res.status(200).json({ user: updatedUser });
   } catch (err) {
-    console.error("❌ Profile update error:", err);
+    console.error(" Profile update error:", err);
     res.status(500).json({ message: "Profile update failed", error: err.message });
   }
 };
