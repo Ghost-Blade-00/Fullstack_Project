@@ -11,38 +11,33 @@ export const useAuthStore = create((set) => ({
   isSigningUp: false,
   isCheckingAuth: false,
 
-  // ✅ Setter (fixes "setAuthUser is not a function")
+  //  Setter (fixes "setAuthUser is not a function")
   setAuthUser: (user) => set({ authUser: user }),
 
-  // ✅ Connect Socket (after login)
-  connectSocket: (userId) => {
-    if (!userId) return;
+  //  Connect Socket (after login)
+connectSocket: (userId) => {
+  if (!userId) return;
 
-    const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:5001", {
-      query: { userId },
-      withCredentials: true,
-      transports: ["websocket"],
-    });
+  const backendUrl =
+    import.meta.env.MODE === "development"
+      ? "http://localhost:5001"
+      :"https://securechat.onrender.com";
 
-    socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
-    });
+  const socket = io(backendUrl, {
+    query: { userId },
+    withCredentials: true,
+    transports: ["websocket"],
+  });
 
-    // ✅ Listen for online users from backend
-    socket.on("getOnlineUsers", (users) => {
-      console.log("🟢 Online users updated:", users);
-      set({ onlineUsers: users });
-    });
+  socket.on("connect", () => console.log("✅ Socket connected:", socket.id));
+  socket.on("getOnlineUsers", (users) => set({ onlineUsers: users }));
+  socket.on("disconnect", () => set({ onlineUsers: [] }));
 
-    socket.on("disconnect", () => {
-      console.log("🔌 Socket disconnected");
-      set({ onlineUsers: [] });
-    });
+  set({ socket });
+},
 
-    set({ socket });
-  },
 
-  // ✅ Disconnect socket on logout
+  //  Disconnect socket on logout
   disconnectSocket: () => {
     const socket = useAuthStore.getState().socket;
     if (socket) {
@@ -52,7 +47,7 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  // ✅ Signup
+  //  Signup
   signup: async (data) => {
     set({ isSigningUp: true });
     try {
@@ -68,7 +63,7 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  // ✅ Login
+  //  Login
   login: async (data) => {
     set({ isLoggingIn: true });
     try {
@@ -84,7 +79,7 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  // ✅ Logout
+  // Logout
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout", {}, { withCredentials: true });
@@ -97,7 +92,7 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  // ✅ Check authentication (on page refresh)
+  //  Check authentication (on page refresh)
   checkAuth: async () => {
     set({ isCheckingAuth: true });
     try {
