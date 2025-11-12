@@ -11,13 +11,14 @@ import { v4 as uuid } from "uuid";
 import { connectDB } from "./lib/db.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { existsSync } from "fs";
 
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
 import deviceRoutes from "./routes/device.route.js";
 import envelopeRoutes from "./routes/envelope.route.js";
 import attachmentRoutes from "./routes/attachment.route.js";
-import { existsSync } from "fs";
+
 // __dirname setup for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +32,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://securechat.com",
+  "https://securechat.onrender.com", // ✅ use your Render domain, not .com
 ];
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));
@@ -65,25 +66,21 @@ app.use("/api/attachments", apiLimiter, attachmentRoutes);
 // Health check
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
-// Serve frontend build in production
+// ✅ Serve frontend build in production
 if (process.env.NODE_ENV === "production") {
-  const path = await import("path");
-  const { existsSync } = await import("fs");
-
   const renderPath = path.resolve(process.cwd(), "../frontend/dist");
   const localPath = path.resolve(__dirname, "../../frontend/dist");
 
   const frontendPath = existsSync(renderPath) ? renderPath : localPath;
-
   console.log("✅ Serving static files from:", frontendPath);
 
   app.use(express.static(frontendPath));
 
+  // React Router fallback
   app.get("*", (req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
-
 
 // Error handler
 app.use((err, req, res, next) => {
