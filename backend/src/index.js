@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-
 import { app, server } from "./lib/socket.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -20,23 +19,40 @@ import attachmentRoutes from "./routes/attachment.route.js";
 // ✅ Connect MongoDB
 connectDB();
 
-// ✅ Middlewares
+// ✅ Security & middleware
 app.disable("x-powered-by");
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://fullstack-project-pyw4.vercel.app",
+];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
+
 app.use(cookieParser());
 app.use(express.json({ limit: "15mb" }));
-
 app.use((req, _res, next) => {
   req.id = uuid();
   next();
 });
-
 app.use(morgan(":method :url :status :res[content-length] - :response-time ms id=:req[id]"));
 
-// ✅ Rate Limiters
+// ✅ Rate limiters
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 600 });
+app.get("/", (_req, res) =>
+  res.send("✅ SecureChat backend is live and running!")
+);
+app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
 
 // ✅ Routes
 app.use("/api/auth", authLimiter, authRoutes);
@@ -45,17 +61,13 @@ app.use("/api/devices", apiLimiter, deviceRoutes);
 app.use("/api/envelopes", apiLimiter, envelopeRoutes);
 app.use("/api/attachments", apiLimiter, attachmentRoutes);
 
-// ✅ Health check
-app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // ✅ Global error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error("❌ Server error:", err.stack);
   res.status(500).json({ message: "Internal server error" });
 });
 
-//  Start Server
+// ✅ Start server
 const PORT = process.env.PORT || 5001;
-server.listen(PORT, () =>
-  console.log(`✅ Backend running on http://localhost:${PORT}`)
-);
+server.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
