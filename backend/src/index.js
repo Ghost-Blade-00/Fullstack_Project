@@ -24,37 +24,37 @@ connectDB();
 app.disable("x-powered-by");
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
-// ✅ Allowed Origins (Production + Dev)
+// ✅ Allow frontend domains
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://fullstack-project-pyw4.vercel.app",
+  "https://fullstack-project-pyw4.vercel.app", // main Vercel domain
 ];
 
-// ✅ Flexible CORS Setup for Vercel + Render
+// ✅ Flexible CORS Setup for Render + Vercel Preview
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // allow Postman or curl
+      if (!origin) return callback(null, true); // Allow Postman/curl
       if (
         allowedOrigins.includes(origin) ||
-        origin.endsWith(".vercel.app") // ✅ allow all vercel preview domains
+        origin.endsWith(".vercel.app") // ✅ Allow all preview domains
       ) {
         return callback(null, true);
       }
       console.warn("❌ Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true, // ✅ allow cookies
+    credentials: true, // ✅ allow sending cookies
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// ✅ JSON + Cookies
+// ✅ JSON + Cookie parser
 app.use(cookieParser());
 app.use(express.json({ limit: "15mb" }));
 
-// ✅ Request ID for logs
+// ✅ Add unique request ID
 app.use((req, _res, next) => {
   req.id = uuid();
   next();
@@ -69,11 +69,11 @@ app.use(
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 600 });
 
-// ✅ Root & Health Check
+// ✅ Health Routes
 app.get("/", (_req, res) => res.send("✅ SecureChat backend is live and running!"));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
-// ✅ Main API Routes
+// ✅ Mount Routes
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/messages", apiLimiter, messageRoutes);
 app.use("/api/devices", apiLimiter, deviceRoutes);
@@ -89,6 +89,6 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ message: "Internal server error" });
 });
 
-// ✅ Start Server
+// ✅ Start server
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));

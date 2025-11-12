@@ -13,7 +13,7 @@ const generateToken = (userId, res) => {
   res.cookie("jwt", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // only over HTTPS
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // required for cross-site cookies
+    sameSite: "none", // required for cross-site cookies
     path: "/", // accessible for all routes
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
