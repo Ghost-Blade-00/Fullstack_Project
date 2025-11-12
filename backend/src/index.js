@@ -17,7 +17,7 @@ import messageRoutes from "./routes/message.route.js";
 import deviceRoutes from "./routes/device.route.js";
 import envelopeRoutes from "./routes/envelope.route.js";
 import attachmentRoutes from "./routes/attachment.route.js";
-
+import { existsSync } from "fs";
 // __dirname setup for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,14 +67,18 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // Serve frontend build in production
 if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.resolve(process.cwd(), "../frontend/dist");
-  console.log(" Serving static files from:", frontendPath);
+  const possiblePaths = [
+    path.resolve(process.cwd(), "../frontend/dist"),     // Render
+    path.resolve(__dirname, "../../frontend/dist"),      // Local
+  ];
+
+  const frontendPath = possiblePaths.find((p) => existsSync(p));
+  console.log("✅ Serving static files from:", frontendPath);
 
   app.use(express.static(frontendPath));
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
+  app.get("*", (req, res) =>
+    res.sendFile(path.join(frontendPath, "index.html"))
+  );
 }
 
 // Error handler
