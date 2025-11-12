@@ -3,15 +3,17 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import cloudinary from "../lib/cloudinary.js";
 
-//  Generate JWT token & store in cookies
+// 🔐 Generate JWT token & store in cookies
 const generateToken = (userId, res) => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 
-  //  Secure cookie setup for Render + Vercel
+  // ✅ Secure cookie for cross-origin (Render + Vercel)
   res.cookie("jwt", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // true for HTTPS
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // none for cross-site
+    secure: process.env.NODE_ENV === "production", // only over HTTPS
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // required for cross-site cookies
     path: "/", // accessible for all routes
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
@@ -19,7 +21,7 @@ const generateToken = (userId, res) => {
   return token;
 };
 
-// Signup
+// 🟢 Signup
 export const signup = async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
@@ -35,7 +37,9 @@ export const signup = async (req, res) => {
       fullName,
       email,
       password: hashedPassword,
-      profilePic: `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
+      profilePic: `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(
+        fullName
+      )}`,
     });
 
     generateToken(user._id, res);
@@ -52,15 +56,17 @@ export const signup = async (req, res) => {
   }
 };
 
-//  Login
+// 🟢 Login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
     generateToken(user._id, res);
 
@@ -76,7 +82,7 @@ export const login = async (req, res) => {
   }
 };
 
-//  Logout
+// 🔴 Logout
 export const logout = async (req, res) => {
   res.clearCookie("jwt", {
     httpOnly: true,
@@ -87,11 +93,15 @@ export const logout = async (req, res) => {
   res.json({ message: "Logged out successfully" });
 };
 
-//  Check authentication
+// 🧠 Check Authentication
 export const checkAuth = async (req, res) => {
   try {
+    if (!req.user)
+      return res.status(401).json({ message: "Unauthorized - No user context" });
+
     const user = await User.findById(req.user._id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
+
     res.json(user);
   } catch (error) {
     console.error("CheckAuth error:", error);
@@ -99,10 +109,11 @@ export const checkAuth = async (req, res) => {
   }
 };
 
-//  Update profile (profile picture or name)
+// 🧩 Update Profile (Profile Picture or Name)
 export const updateProfile = async (req, res) => {
   try {
     console.log("🟢 Received profile update request");
+
     const userId = req.user._id;
     const { fullName } = req.body;
 
@@ -111,6 +122,7 @@ export const updateProfile = async (req, res) => {
 
     const base64 = Buffer.from(req.file.buffer).toString("base64");
     const dataURI = `data:${req.file.mimetype};base64,${base64}`;
+
     const result = await cloudinary.uploader.upload(dataURI, {
       folder: "securechat_profiles",
     });
@@ -127,16 +139,22 @@ export const updateProfile = async (req, res) => {
     res.status(200).json({ user: updatedUser });
   } catch (err) {
     console.error("Profile update error:", err);
-    res.status(500).json({ message: "Profile update failed", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Profile update failed", error: err.message });
   }
 };
 
-//  Get all users (for chat sidebar)
+// 👥 Get All Users (Chat Sidebar)
 export const getAllUsers = async (req, res) => {
   try {
+    if (!req.user)
+      return res.status(401).json({ message: "Unauthorized - No token" });
+
     const users = await User.find({ _id: { $ne: req.user._id } }).select(
       "_id fullName email profilePic"
     );
+
     res.json(users);
   } catch (error) {
     console.error("GetAllUsers error:", error);
