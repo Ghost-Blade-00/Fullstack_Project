@@ -67,19 +67,23 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // Serve frontend build in production
 if (process.env.NODE_ENV === "production") {
-  const possiblePaths = [
-    path.resolve(process.cwd(), "../frontend/dist"),     // Render
-    path.resolve(__dirname, "../../frontend/dist"),      // Local
-  ];
+  const path = await import("path");
+  const { existsSync } = await import("fs");
 
-  const frontendPath = possiblePaths.find((p) => existsSync(p));
+  const renderPath = path.resolve(process.cwd(), "../frontend/dist");
+  const localPath = path.resolve(__dirname, "../../frontend/dist");
+
+  const frontendPath = existsSync(renderPath) ? renderPath : localPath;
+
   console.log("✅ Serving static files from:", frontendPath);
 
   app.use(express.static(frontendPath));
-  app.get("*", (req, res) =>
-    res.sendFile(path.join(frontendPath, "index.html"))
-  );
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
 }
+
 
 // Error handler
 app.use((err, req, res, next) => {
