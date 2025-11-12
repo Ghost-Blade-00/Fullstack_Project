@@ -31,7 +31,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://securechat.onrender.com",
+  "https://securechat.com",
 ];
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));
@@ -67,7 +67,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // Serve frontend build in production
 if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.join(__dirname, "../frontend/dist");
+  const frontendPath = path.join(__dirname, "../../frontend/dist");
   app.use(express.static(frontendPath));
   app.get("*", (req, res) =>
     res.sendFile(path.resolve(frontendPath, "index.html"))
